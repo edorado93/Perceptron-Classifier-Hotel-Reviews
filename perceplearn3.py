@@ -14,10 +14,11 @@ class Data:
         self.bias = 0.0
         self.read_corpus()
 
-    def get_one_hot_vectors(self, word):
-        zeros = numpy.zeros(len(self.unique_words)).reshape((1, -1))
-        zeros[0][self.unique_words.index(word)] = 1
-        return zeros
+    def one_hot_vectors(self):
+        for index, word in enumerate(self.unique_words):
+            zeros = numpy.zeros((1, len(self.unique_words)))
+            zeros.put(index, 1)
+            self.one_hot[word] = zeros
 
     def sentence_vector(self, review):
         rev = [self.one_hot[word] for word in review]
@@ -36,8 +37,7 @@ class Data:
         self.unique_words = list(self.unique_words)
 
         """ Get one hot encoding for word vectors """
-        for word in self.unique_words:
-            self.one_hot[word] = self.get_one_hot_vectors(word)
+        self.one_hot_vectors()
 
         """ Form sentence vectors and store them """
         for identifier in self.reviews:
