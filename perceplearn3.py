@@ -1,8 +1,12 @@
 from random import shuffle
 import numpy
 import time
+import sys
 
 class Data:
+
+    UNK = "unk"
+
     def __init__(self, filename, mini_batch_size=1):
         self.filename = filename
         self.reviews = {}
@@ -10,8 +14,6 @@ class Data:
         self.unique_words = None
         self.feature_vectors = []
         self.one_hot = {}
-        self.weight_vector = None
-        self.bias = 0.0
         self.read_corpus()
 
     def one_hot_vectors(self):
@@ -33,8 +35,6 @@ class Data:
 
             self.feature_vectors.append((true_or_fake, pos_or_neg, sent_vec))
 
-            # print(numpy.count_nonzero(self.feature_vectors[-1][2] == 1))
-
     def read_corpus(self):
         start = time.time()
         self.unique_words = set()
@@ -45,20 +45,13 @@ class Data:
                 for word in review:
                     self.unique_words.add(word)
         self.unique_words = list(self.unique_words)
+        self.unique_words.append(Data.UNK)
 
         """ Get one hot encoding for word vectors """
         self.one_hot_vectors()
 
         """ Form sentence vectors --> feature_vectors """
         self.form_sentence_vectors()
-
-        """ Initialize weight vector """
-        self.weight_vector = [numpy.random.rand(len(self.unique_words), 1), numpy.random.rand(len(self.unique_words), 1)]
-
-        """ Initialize bias """
-        self.bias = [numpy.random.random_sample(), numpy.random.random_sample()]
-
-        print("Time taken to load the data is: ", (time.time() - start) * 1000)
 
     """ Shuffle up the reviews to be considered in every epoch. """
     def shuffle(self):
@@ -68,10 +61,22 @@ class Data:
     def get_next_batch(self, index):
         return self.reviews[index : min(index + self.mini_batch_size, len(self.reviews))], min(index + self.mini_batch_size, len(self.reviews))
 
-class VanillaPerceptron:
-    def __init__(self, data, epochs=5):
+class Perceptron:
+    def __init__(self, data, model_filename, epochs=5, is_average=False):
         self.data = data
         self.epochs = epochs
+        """ Initialize weight vector """
+        self.weight_vector = [numpy.random.rand(len(data.unique_words), 1),
+                              numpy.random.rand(len(data.unique_words), 1)]
+        self.cached_weight_vector = [numpy.random.rand(len(data.unique_words), 1),
+                                     numpy.random.rand(len(data.unique_words), 1)]
+
+        """ Initialize bias """
+        self.bias = [numpy.random.random_sample(), numpy.random.random_sample()]
+        self.cached_bias = [numpy.random.random_sample(), numpy.random.random_sample()]
+
+        self.is_average_perceptron = is_average
+        self.model_filename = model_filename
 
     def train(self):
         for epoch in range(1, self.epochs):
@@ -80,29 +85,60 @@ class VanillaPerceptron:
             for tup in self.data.feature_vectors:
                 true_or_fake, pos_or_neg, vector = tup
                 """ We are training two classifiers here """
-                activation1 = numpy.matmul(vector, self.data.weight_vector[0]) + self.data.bias[0]
-                activation2 = numpy.matmul(vector, self.data.weight_vector[1]) + self.data.bias[1]
+                activation1 = numpy.matmul(vector, self.weight_vector[0]) + self.bias[0]
+                activation2 = numpy.matmul(vector, self.weight_vector[1]) + self.bias[1]
 
                 """ Update weights for classifier 1 """
                 if true_or_fake * activation1 <= 0:
-                    self.data.weight_vector[0] += numpy.transpose(numpy.multiply(true_or_fake, vector))
-                    self.data.bias[0] += true_or_fake
+                    self.weight_vector[0] += numpy.transpose(numpy.multiply(true_or_fake, vector))
+                    self.bias[0] += true_or_fake
+
+                    if self.is_average_perceptron:
+                        self.cached_weight_vector[0] += numpy.transpose(numpy.multiply(numpy.multiply(true_or_fake, vector), epoch))
+                        self.bias[0] += true_or_fake * epoch
+
                 else:
                     success[0] += 1
 
                 """ Update weights for classifier 2 """
                 if pos_or_neg * activation2 <= 0:
-                    self.data.weight_vector[1] += numpy.transpose(numpy.multiply(pos_or_neg, vector))
-                    self.data.bias[1] += pos_or_neg
+                    self.weight_vector[1] += numpy.transpose(numpy.multiply(pos_or_neg, vector))
+                    self.bias[1] += pos_or_neg
+
+                    if self.is_average_perceptron:
+                        self.cached_weight_vector[1] += numpy.transpose(numpy.multiply(numpy.multiply(pos_or_neg, vector), epoch))
+                        self.bias[1] += pos_or_neg * epoch
+
                 else:
                     success[1] += 1
 
-            print("Epoch:", epoch," Accuracy:", success[0] / len(self.data.feature_vectors), "% on True / Fake dataset and ",success[1] / len(self.data.feature_vectors), "% on Pos / Neg dataset")
+            # print("Epoch:", epoch," Accuracy:", success[0] / len(self.data.feature_vectors), "% on True / Fake dataset and ",success[1] / len(self.data.feature_vectors), "% on Pos / Neg dataset")
 
-class AveragePerceptron:
-    def __init__(self):
-        pass
+        if self.is_average_perceptron:
+            self.weight_vector[0] = numpy.subtract(self.weight_vector[0], numpy.multiply(1 / (self.epochs+1), self.cached_weight_vector[0]))
+            self.weight_vector[1] = numpy.subtract(self.weight_vector[1], numpy.multiply(1 / (self.epochs+1), self.cached_weight_vector[1]))
+            self.bias[0] -= (1 / (self.epochs+1)) * self.cached_bias[0]
+            self.bias[1] -= (1 / (self.epochs + 1)) * self.cached_bias[1]
+
+        self.save()
+
+    def save(self):
+        with open(self.model_filename, "w") as f:
+            f.write(str(data.unique_words));f.write("\n")
+
+            w = []
+            for x in numpy.nditer(self.weight_vector[0]):
+                w.append(str(x))
+            f.write(str(w));f.write("\n")
+
+            w = []
+            for x in numpy.nditer(self.weight_vector[1]):
+                w.append(str(x))
+            f.write(str(w));f.write("\n")
+            f.write(str(self.bias[0]));f.write("\n")
+            f.write(str(self.bias[1]));
 
 if __name__ == "__main__":
-    data = Data("coding-2-data-corpus/train-labeled.txt")
-    VanillaPerceptron(data, epochs=100).train()
+    data = Data(sys.argv[1])
+    Perceptron(data, "vanillamodel.txt", epochs=20).train()
+    Perceptron(data, "averagedmodel.txt", epochs=20, is_average=True).train()
