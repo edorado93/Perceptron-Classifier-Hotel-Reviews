@@ -28,8 +28,8 @@ class Data:
                 sent_vec += self.one_hot[word]
 
             """ Converting expected outputs to binary values """
-            true_or_fake = 1 if true_or_fake == "True" else 0
-            pos_or_neg = 1 if pos_or_neg == "Pos" else 0
+            true_or_fake = 1 if true_or_fake == "True" else -1
+            pos_or_neg = 1 if pos_or_neg == "Pos" else -1
 
             self.feature_vectors.append((true_or_fake, pos_or_neg, sent_vec))
 
@@ -63,7 +63,6 @@ class Data:
     """ Shuffle up the reviews to be considered in every epoch. """
     def shuffle(self):
         shuffle(self.feature_vectors)
-        return self.feature_vectors
 
     """ In case we hav to implement mini-batching. """
     def get_next_batch(self, index):
@@ -77,6 +76,7 @@ class VanillaPerceptron:
     def train(self):
         for epoch in range(1, self.epochs):
             success = [0, 0]
+            self.data.shuffle()
             for tup in self.data.feature_vectors:
                 true_or_fake, pos_or_neg, vector = tup
                 """ We are training two classifiers here """
@@ -85,14 +85,14 @@ class VanillaPerceptron:
 
                 """ Update weights for classifier 1 """
                 if true_or_fake * activation1 <= 0:
-                    self.data.weight_vector[0] += true_or_fake * vector
+                    self.data.weight_vector[0] += numpy.transpose(numpy.multiply(true_or_fake, vector))
                     self.data.bias[0] += true_or_fake
                 else:
                     success[0] += 1
 
                 """ Update weights for classifier 2 """
                 if pos_or_neg * activation2 <= 0:
-                    self.data.weight_vector[1] += pos_or_neg * vector
+                    self.data.weight_vector[1] += numpy.transpose(numpy.multiply(pos_or_neg, vector))
                     self.data.bias[1] += pos_or_neg
                 else:
                     success[1] += 1
@@ -105,3 +105,4 @@ class AveragePerceptron:
 
 if __name__ == "__main__":
     data = Data("coding-2-data-corpus/train-labeled.txt")
+    VanillaPerceptron(data, epochs=100).train()
