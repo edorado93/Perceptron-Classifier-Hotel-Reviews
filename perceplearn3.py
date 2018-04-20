@@ -17,13 +17,23 @@ class Data:
     def one_hot_vectors(self):
         for index, word in enumerate(self.unique_words):
             zeros = numpy.zeros((1, len(self.unique_words)))
-            zeros.put(index, 1)
+            zeros.put(index, 1.0)
             self.one_hot[word] = zeros
 
-    def sentence_vector(self, review):
-        rev = [self.one_hot[word] for word in review]
-        concat = numpy.sum(rev, axis=0)
-        return concat
+    def form_sentence_vectors(self):
+        for identifier in self.reviews:
+            true_or_fake, pos_or_neg, review = self.reviews[identifier]
+            sent_vec = numpy.copy(self.one_hot[review[0]])
+            for word in review[1:]:
+                sent_vec += self.one_hot[word]
+
+            """ Converting expected outputs to binary values """
+            true_or_fake = 1 if true_or_fake == "True" else 0
+            pos_or_neg = 1 if pos_or_neg == "Pos" else 0
+
+            self.feature_vectors.append((true_or_fake, pos_or_neg, sent_vec))
+
+            # print(numpy.count_nonzero(self.feature_vectors[-1][2] == 1))
 
     def read_corpus(self):
         start = time.time()
@@ -39,14 +49,8 @@ class Data:
         """ Get one hot encoding for word vectors """
         self.one_hot_vectors()
 
-        """ Form sentence vectors and store them """
-        for identifier in self.reviews:
-            true_or_fake, pos_or_neg, review = self.reviews[identifier]
-
-            """ Converting expected outputs to binary values """
-            true_or_fake = 1 if true_or_fake == "True" else 0
-            pos_or_neg = 1 if pos_or_neg == "Pos" else 0
-            self.feature_vectors.append((true_or_fake, pos_or_neg, self.sentence_vector(review)))
+        """ Form sentence vectors --> feature_vectors """
+        self.form_sentence_vectors()
 
         """ Initialize weight vector """
         self.weight_vector = [numpy.random.rand(len(self.unique_words), 1), numpy.random.rand(len(self.unique_words), 1)]
