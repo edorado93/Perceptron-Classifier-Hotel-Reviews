@@ -1,6 +1,7 @@
 import numpy
 import ast
 import sys
+import util3
 
 class PerceptronClassify:
 
@@ -19,7 +20,9 @@ class PerceptronClassify:
         with open(self.output_file, "w") as o:
             with open(self.test_file) as f:
                 for line in f:
+                    line = util3.remove_punctuation(line)
                     identifier, *review = line.strip().split()
+                    review = list(map(str.lower, review))
                     true_or_fake, pos_or_neg = self.classify_review(review)
                     o.write(identifier + " " + true_or_fake + " " + pos_or_neg + "\n")
 

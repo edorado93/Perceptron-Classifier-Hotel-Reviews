@@ -2,6 +2,7 @@ from random import shuffle
 import numpy
 import time
 import sys
+import util3
 
 class Data:
 
@@ -40,7 +41,9 @@ class Data:
         self.unique_words = set()
         with open(self.filename) as f:
             for line in f:
+                line = util3.remove_punctuation(line)
                 identifier, true_or_fake, pos_or_neg, *review = line.strip().split()
+                review = list(map(str.lower, review))
                 self.reviews[identifier] = (true_or_fake, pos_or_neg, review)
                 for word in review:
                     self.unique_words.add(word)
