@@ -41,7 +41,7 @@ class Data:
         self.unique_words = set()
         with open(self.filename) as f:
             for line in f:
-                line = util3.remove_punctuation(line)
+                line = util3.remove_stop_words(util3.remove_punctuation(line))
                 identifier, true_or_fake, pos_or_neg, *review = line.strip().split()
                 review = list(map(str.lower, review))
                 self.reviews[identifier] = (true_or_fake, pos_or_neg, review)
@@ -82,6 +82,7 @@ class Perceptron:
         self.model_filename = model_filename
 
     def train(self):
+        stopping_epoch = self.epochs
         for epoch in range(1, self.epochs):
             success = [0, 0]
             self.data.shuffle()
@@ -115,13 +116,17 @@ class Perceptron:
                 else:
                     success[1] += 1
 
+            """ Classified completely """
+            if success[0] == len(self.data.feature_vectors) and success[0] == success[1]:
+                stopping_epoch = epoch
+                break
             # print("Epoch:", epoch," Accuracy:", success[0] / len(self.data.feature_vectors), "% on True / Fake dataset and ",success[1] / len(self.data.feature_vectors), "% on Pos / Neg dataset")
 
         if self.is_average_perceptron:
-            self.weight_vector[0] = numpy.subtract(self.weight_vector[0], numpy.multiply(1 / (self.epochs+1), self.cached_weight_vector[0]))
-            self.weight_vector[1] = numpy.subtract(self.weight_vector[1], numpy.multiply(1 / (self.epochs+1), self.cached_weight_vector[1]))
-            self.bias[0] -= (1 / (self.epochs+1)) * self.cached_bias[0]
-            self.bias[1] -= (1 / (self.epochs + 1)) * self.cached_bias[1]
+            self.weight_vector[0] = numpy.subtract(self.weight_vector[0], numpy.multiply(1 / (stopping_epoch + 1), self.cached_weight_vector[0]))
+            self.weight_vector[1] = numpy.subtract(self.weight_vector[1], numpy.multiply(1 / (stopping_epoch + 1), self.cached_weight_vector[1]))
+            self.bias[0] -= (1 / (stopping_epoch + 1)) * self.cached_bias[0]
+            self.bias[1] -= (1 / (stopping_epoch + 1)) * self.cached_bias[1]
 
         self.save()
 

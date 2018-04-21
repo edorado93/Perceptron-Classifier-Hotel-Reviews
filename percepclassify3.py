@@ -20,7 +20,7 @@ class PerceptronClassify:
         with open(self.output_file, "w") as o:
             with open(self.test_file) as f:
                 for line in f:
-                    line = util3.remove_punctuation(line)
+                    line = util3.remove_stop_words(util3.remove_punctuation(line))
                     identifier, *review = line.strip().split()
                     review = list(map(str.lower, review))
                     true_or_fake, pos_or_neg = self.classify_review(review)
@@ -41,11 +41,21 @@ class PerceptronClassify:
             self.create_one_hot_vectors()
 
     def classify_review(self, review):
-        sent_vec = numpy.copy(self.one_hot_vectors[review[0]] if review[0] in self.one_hot_vectors
-                              else self.one_hot_vectors[PerceptronClassify.UNK])
-        for word in review[1:]:
-            sent_vec += self.one_hot_vectors[word] if word in self.one_hot_vectors \
-                        else self.one_hot_vectors[PerceptronClassify.UNK]
+
+        sent_vec = None
+        start_index = None
+        for index, word in enumerate(review):
+            if word in self.one_hot_vectors:
+                sent_vec = numpy.copy(self.one_hot_vectors[word])
+                start_index = index
+                break
+
+        if start_index is None:
+            return "True", "Pos"
+
+        for word in review[start_index:]:
+            if word in self.one_hot_vectors:
+                sent_vec += self.one_hot_vectors[word]
 
         activation1 = numpy.matmul(sent_vec, self.weight_vector[0]) + self.bias[0]
         activation2 = numpy.matmul(sent_vec, self.weight_vector[1]) + self.bias[1]

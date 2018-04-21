@@ -25,17 +25,6 @@ stop_words = {'i', 'me', 'my', 'myself', 'we', 'our', 'ours',
               'shouldn', "shouldn't", 'wasn', "wasn't", 'weren', "weren't", 'won',
               "won't", 'wouldn', "wouldn't"}
 
-common_words = {"a","the","is","was","were","that","their","should","can","could","must","they","their","get","got","put",
-"keep","it","on","for","in","about","upon","you","i","we","would","and","will","number","be","he","she","it","their"
-"that","ok","k","one","two","three","four","five","six","seven","eight","nine","up","down","us","but","all","where"
-,"been","of","do","dont","later","make","made","ans","at","our","him","his","her","else","did","does","done","had"
-"has","have","to","than","with","by","or","makes","likes","liked","made","kmow","my","from","went","told","only","this"
-,"much","me","mine","im","say","said","spoke","men","women","since","back","before","okay","an","what","where","who","whom"
-,"also","if","other","yet","go","such","throughout","through","though","as","when","oh","so","here","after","them","then",
-"what","man","woman","there","let","now","bed","come","came","its","ill","ive","were""there","hyatt","regency","chicago","husband","summer","vacation",
-"couldnt","had","some","seems","north","michigan","avenue","are","drake","westin","concierge","august","fiancee","city",
-"even","while","see",""}
-
 translator = str.maketrans('', '', string.punctuation)
 
 def remove_punctuation(review):
@@ -44,7 +33,7 @@ def remove_punctuation(review):
 def remove_stop_words(review):
     new_review = []
     for word in review.split():
-        if word not in stop_words and word not in common_words:
+        if word not in stop_words:
             new_review.append(word)
 
     return " ".join(new_review)
