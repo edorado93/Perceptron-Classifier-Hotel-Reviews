@@ -7,7 +7,6 @@ import random
 class Data:
     def __init__(self, filename):
         self.filename = filename
-        self.reviews = {}
         self.unique_words = None
         self.feature_vectors = []
         self.read_corpus()
@@ -19,8 +18,6 @@ class Data:
                 line = util3.remove_stop_words(util3.remove_punctuation(line))
                 identifier, true_or_fake, pos_or_neg, *review = line.strip().split()
                 review = list(map(str.lower, review))
-                self.reviews[identifier] = (true_or_fake, pos_or_neg, review)
-
                 """ Converting expected outputs to binary values """
                 true_or_fake = 1 if true_or_fake == "True" else -1
                 pos_or_neg = 1 if pos_or_neg == "Pos" else -1
@@ -28,7 +25,6 @@ class Data:
 
                 for word in review:
                     self.unique_words.add(word)
-
     """ Shuffle up the reviews to be considered in every epoch. """
     def shuffle(self):
         shuffle(self.feature_vectors)
