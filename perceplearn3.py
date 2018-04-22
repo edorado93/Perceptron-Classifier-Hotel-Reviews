@@ -66,7 +66,7 @@ class Perceptron:
                 weight[word] += output * counts[word]
                 if is_average:
                     cached_weight[word] += output * counts[word] * epoch
-                    bias += output
+            bias += output
             if is_average:
                 cached_bias += output * epoch
             return False
