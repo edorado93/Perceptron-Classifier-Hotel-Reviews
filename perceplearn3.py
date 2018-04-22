@@ -99,7 +99,7 @@ class Perceptron:
 
                     if self.is_average_perceptron:
                         self.cached_weight_vector[0] += numpy.transpose(numpy.multiply(numpy.multiply(true_or_fake, vector), epoch))
-                        self.bias[0] += true_or_fake * epoch
+                        self.cached_bias[0] += true_or_fake * epoch
 
                 else:
                     success[0] += 1
@@ -111,7 +111,7 @@ class Perceptron:
 
                     if self.is_average_perceptron:
                         self.cached_weight_vector[1] += numpy.transpose(numpy.multiply(numpy.multiply(pos_or_neg, vector), epoch))
-                        self.bias[1] += pos_or_neg * epoch
+                        self.cached_bias[1] += pos_or_neg * epoch
 
                 else:
                     success[1] += 1
