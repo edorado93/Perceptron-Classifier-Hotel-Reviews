@@ -41,18 +41,18 @@ class Perceptron:
         self.cached_weight_vector = [{}, {}]
 
         """ Initialize bias """
-        self.bias = [random.random(), random.random()]
-        self.cached_bias = [random.random(), random.random()]
+        self.bias = [0, 0]
+        self.cached_bias = [0, 0]
 
         self.is_average_perceptron = is_average
         self.model_filename = model_filename
 
     def initialise_weights(self):
         for word in data.unique_words:
-            self.weight_vector[0][word] = random.random()
-            self.weight_vector[1][word] = random.random()
-            self.cached_weight_vector[0][word] = random.random()
-            self.cached_weight_vector[1][word] = random.random()
+            self.weight_vector[0][word] = 0
+            self.weight_vector[1][word] = 0
+            self.cached_weight_vector[0][word] = 0
+            self.cached_weight_vector[1][word] = 0
 
     def classify_and_update(self, review, weight, bias, cached_weight, cached_bias, output, epoch, is_average):
         activation = 0
@@ -76,7 +76,8 @@ class Perceptron:
     def train(self):
         stopping_epoch = self.epochs
         self.initialise_weights()
-        self.data.shuffle()
+        # self.data.shuffle()
+        index = 1
         for epoch in range(1, self.epochs):
             success = [0, 0]
             for tup1, tup2 in zip(self.data.feature_vectors_pos_neg, self.data.feature_vectors_true_fake):
@@ -85,15 +86,15 @@ class Perceptron:
 
                 """ review, weight, bias, cached_weight, cached_bias, output, epoch, is_average """
                 success[0] += True == self.classify_and_update(review_tf, self.weight_vector[0], self.bias[0], self.cached_weight_vector[0]
-                                         , self.cached_bias[0], true_or_fake, epoch, self.is_average_perceptron)
+                                         , self.cached_bias[0], true_or_fake, index, self.is_average_perceptron)
                 success[1] += True == self.classify_and_update(review_pn, self.weight_vector[1], self.bias[1], self.cached_weight_vector[1]
-                                         , self.cached_bias[1], pos_or_neg, epoch, self.is_average_perceptron)
-
+                                         , self.cached_bias[1], pos_or_neg, index, self.is_average_perceptron)
+                index += 1
 
 
             """ Classified completely """
             if success[0] == len(self.data.feature_vectors_true_fake) and success[0] == success[1]:
-                stopping_epoch = epoch
+                stopping_epoch = index
                 break
             # print("Epoch:", epoch," Accuracy:", success[0] / len(self.data.feature_vectors_true_fake), "% on True / Fake dataset and ",success[1] / len(self.data.feature_vectors_true_fake), "% on Pos / Neg dataset")
 
