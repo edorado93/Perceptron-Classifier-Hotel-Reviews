@@ -2,7 +2,6 @@ from random import shuffle
 import sys
 import util3
 from collections import Counter
-import random
 
 class Data:
     def __init__(self, filename):
@@ -15,10 +14,12 @@ class Data:
     def read_corpus(self):
         self.unique_words = set()
         with open(self.filename) as f:
+            corpus = []
             for line in f:
                 line = util3.remove_stop_words(util3.remove_punctuation(line))
                 identifier, true_or_fake, pos_or_neg, *review = line.strip().split()
                 review = list(map(str.lower, review))
+                corpus += review
                 """ Converting expected outputs to binary values """
                 true_or_fake = 1 if true_or_fake == "True" else -1
                 pos_or_neg = 1 if pos_or_neg == "Pos" else -1
@@ -27,6 +28,11 @@ class Data:
 
                 for word in review:
                     self.unique_words.add(word)
+            total_counts = Counter(corpus)
+            for word in total_counts:
+                if total_counts[word] < 4:
+                    self.unique_words.remove(word)
+
     """ Shuffle up the reviews to be considered in every epoch. """
     def shuffle(self):
         shuffle(self.feature_vectors_pos_neg)
@@ -58,20 +64,28 @@ class Perceptron:
         activation = 0
         counts = Counter(review)
         for word in counts:
+            # Ignore the word if it's a rare one
+            if word not in self.data.unique_words:
+                continue
+
             activation += weight[word] * counts[word]
 
         """ Update weights for classifier 1 """
         if output * (activation + bias) <= 0:
             for word in counts:
+                # Ignore the word if it's a rare one
+                if word not in self.data.unique_words:
+                    continue
+
                 weight[word] += output * counts[word]
                 if is_average:
                     cached_weight[word] += output * counts[word] * epoch
             bias += output
             if is_average:
                 cached_bias += output * epoch
-            return False
+            return False, bias, cached_bias
         else:
-            return True
+            return True, bias, cached_bias
 
     def train(self):
         stopping_epoch = self.epochs
@@ -81,14 +95,18 @@ class Perceptron:
         for epoch in range(1, self.epochs):
             success = [0, 0]
             for tup1, tup2 in zip(self.data.feature_vectors_pos_neg, self.data.feature_vectors_true_fake):
-                true_or_fake, review_tf = tup2
-                pos_or_neg, review_pn = tup1
+                true_or_fake, review_tf= tup2
+                pos_or_neg, review_pn= tup1
+
+                result1, self.bias[0], self.cached_bias[0] = self.classify_and_update(review_tf, self.weight_vector[0], self.bias[0], self.cached_weight_vector[0]
+                                         , self.cached_bias[0], true_or_fake, index, self.is_average_perceptron)
+
+                result2, self.bias[1], self.cached_bias[1] = self.classify_and_update(review_pn, self.weight_vector[1], self.bias[1], self.cached_weight_vector[1]
+                                         , self.cached_bias[1], pos_or_neg, index, self.is_average_perceptron)
 
                 """ review, weight, bias, cached_weight, cached_bias, output, epoch, is_average """
-                success[0] += True == self.classify_and_update(review_tf, self.weight_vector[0], self.bias[0], self.cached_weight_vector[0]
-                                         , self.cached_bias[0], true_or_fake, index, self.is_average_perceptron)
-                success[1] += True == self.classify_and_update(review_pn, self.weight_vector[1], self.bias[1], self.cached_weight_vector[1]
-                                         , self.cached_bias[1], pos_or_neg, index, self.is_average_perceptron)
+                success[0] += True == result1
+                success[1] += True == result2
                 index += 1
 
 

@@ -9,7 +9,7 @@ def remove_punctuation(review):
 def remove_stop_words(review):
     new_review = []
     for word in review.split():
-        if word not in common_words:
+        if word not in common_words and not word.isdigit():
             new_review.append(word)
 
     return " ".join(new_review)
